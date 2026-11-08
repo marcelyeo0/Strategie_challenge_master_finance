@@ -40,7 +40,7 @@ def sector_momentum(close: pd.DataFrame, sectors: pd.Series, p: StratParams) -> 
     return out
 
 
-def score(close: pd.DataFrame, sectors: pd.Series, p: StratParams) -> pd.DataFrame:
+def score(close: pd.DataFrame, sectors: pd.Series, p: StratParams, volume: pd.DataFrame | None = None) -> pd.DataFrame:
     """Score composite ; NaN = titre non éligible."""
     mom = momentum_12_1(close, p)
     hi = high_52w(close, p)
@@ -49,6 +49,17 @@ def score(close: pd.DataFrame, sectors: pd.Series, p: StratParams) -> pd.DataFra
     # éligibilité : historique suffisant et cours du jour disponible
     hist = close.notna().cumsum()
     s = s.where((hist >= p.min_history) & close.notna())
+
+    # données douteuses : un saut de plus de max_daily_move en un jour fausse le momentum
+    jump = close.pct_change(fill_method=None).abs().gt(p.max_daily_move)
+    s = s.where(~jump.rolling(p.mom_lookback, min_periods=1).max().astype(bool))
+
+    if getattr(p, "top_liquid", 0) and volume is not None:
+        tv = (close * volume.reindex_like(close)).rolling(63, min_periods=40).median()
+        s = s.where(tv.rank(axis=1, ascending=False) <= p.top_liquid)
+    if getattr(p, "use_lowvol", 0):
+        rv = np.log(close).diff().rolling(252, min_periods=120).std()
+        s = s + p.use_lowvol * _zscore_rows(-rv)
 
     if p.sector_filter > 0:
         sm = sector_momentum(close, sectors, p)

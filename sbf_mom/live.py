@@ -18,7 +18,7 @@ def target_orders(px, sectors, names: pd.Series, p: StratParams, g: GameRules,
     close = px["close"].ffill(limit=5)
     d = close.index[-1]
     last = close.loc[d]
-    sc = score(close, sectors, p).loc[d].dropna().sort_values(ascending=False)
+    sc = score(close, sectors, p, px.get("volume")).loc[d].dropna().sort_values(ascending=False)
     ranks = pd.Series(np.arange(1, len(sc) + 1), index=sc.index)
 
     keep = sorted([t for t in positions if t in ranks and ranks[t] <= p.keep_rank], key=lambda t: ranks[t])

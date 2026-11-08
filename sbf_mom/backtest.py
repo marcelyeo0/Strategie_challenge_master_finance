@@ -60,7 +60,7 @@ def run(px: dict[str, pd.DataFrame], sectors: pd.Series, p: StratParams, g: Game
     close_all = px["close"].ffill(limit=5)
     open_all = px["open"]
 
-    sc_all = score(close_all, sectors, p)
+    sc_all = score(close_all, sectors, p, px.get('volume'))
     vol_all = realized_vol(close_all, p.vol_lookback)
     rets_all = close_all.pct_change(fill_method=None)
 

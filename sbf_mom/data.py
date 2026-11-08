@@ -31,7 +31,7 @@ def download(tickers: list[str], start: str = "2004-01-01", end: str | None = No
         out = {k: pd.read_csv(f, index_col=0, parse_dates=True) for k, f in files.items()}
         missing = [t for t in tickers if t not in out["close"].columns]
         if not missing:
-            return out
+            return clean(out)
         print(f"[data] {len(missing)} tickers absents du cache, nouveau téléchargement")
 
     import yfinance as yf  # import tardif : le reste du code tourne sans
@@ -48,7 +48,14 @@ def download(tickers: list[str], start: str = "2004-01-01", end: str | None = No
         df.sort_index(inplace=True)
         df.to_csv(files[k])
     report_missing(out["close"], tickers)
-    return out
+    return clean(out)
+
+
+def clean(px: dict[str, pd.DataFrame]) -> dict[str, pd.DataFrame]:
+    """Les cours ajustés de Yahoo peuvent être nuls ou négatifs sur de vieux historiques : on les retire."""
+    for k in ("open", "close"):
+        px[k] = px[k].where(px[k] > 0)
+    return px
 
 
 def report_missing(close: pd.DataFrame, tickers: list[str]) -> list[str]:
@@ -74,3 +81,14 @@ def load_abc_export(path: Path | str) -> pd.DataFrame:
                      decimal=",")
     df["date"] = pd.to_datetime(df["date"], dayfirst=True)
     return df
+
+
+def index_or_proxy(close: pd.DataFrame, index_close: pd.Series | None) -> pd.Series:
+    """Yahoo n'a plus l'indice ^SBF120 depuis fin 2015 : on le remplace par un indice
+    équipondéré construit sur l'univers (moyenne des rendements quotidiens)."""
+    if index_close is not None and index_close.last_valid_index() is not None \
+            and index_close.last_valid_index() >= close.index[-1] - pd.Timedelta(days=10):
+        return index_close
+    # rendements bornés à ±25 % par jour : une seule erreur de cours Yahoo ne doit pas fausser l'indice
+    r = close.pct_change(fill_method=None).clip(-0.25, 0.25).median(axis=1).fillna(0)
+    return 100 * (1 + r).cumprod()

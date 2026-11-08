@@ -30,6 +30,7 @@ def _load(refresh=False):
     idx = px["close"].get(data.INDEX_TICKER)
     for k in px:
         px[k] = px[k].drop(columns=[data.INDEX_TICKER], errors="ignore")
+    idx = data.index_or_proxy(px["close"], idx)
     sectors = uni.set_index("ticker")["sector"]
     names = uni.set_index("ticker")["name"]
     return px, idx, sectors, names

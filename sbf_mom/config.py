@@ -22,6 +22,8 @@ class StratParams:
     sector_filter: int = 0           # 0 = off ; k > 0 = ne garder que les k meilleurs secteurs
     sector_lookback: int = 126       # momentum sectoriel sur 6 mois
     min_history: int = 260           # jours de cotation minimum pour être éligible
+    max_daily_move: float = 0.5      # exclut un titre qui a bougé de plus de 50 % en un jour sur 1 an
+                                     # (regroupement d'actions mal ajusté, restructuration : Atos, Emeis…)
     # --- portefeuille ---
     n_positions: int = 5             # nombre de lignes
     keep_rank: int = 15              # bande de conservation : on garde une ligne tant qu'elle reste dans ce top
@@ -33,4 +35,6 @@ class StratParams:
     regime_ma: int | None = 200      # filtre de tendance sur l'indice (None = off)
     regime_exposure: float = 0.5     # exposition max quand l'indice est sous sa moyenne mobile
     min_trade_eur: float = 500.0     # on ignore les ajustements trop petits (frais pour rien)
+    top_liquid: int = 0
+    use_lowvol: float = 0.0
     tickers_excluded: list = field(default_factory=list)
