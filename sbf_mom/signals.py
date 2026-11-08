@@ -42,9 +42,19 @@ def sector_momentum(close: pd.DataFrame, sectors: pd.Series, p: StratParams) -> 
 
 def score(close: pd.DataFrame, sectors: pd.Series, p: StratParams, volume: pd.DataFrame | None = None) -> pd.DataFrame:
     """Score composite ; NaN = titre non éligible."""
-    mom = momentum_12_1(close, p)
-    hi = high_52w(close, p)
-    s = p.w_mom * _zscore_rows(mom) + p.w_high * _zscore_rows(hi)
+    if p.signal == "fip":
+        # Frog in the Pan : parmi les meilleurs rendements 6 mois, préférer ceux obtenus
+        # par une suite de petites hausses (ID très négatif) plutôt que par quelques sauts
+        lr = np.log(close).diff()
+        pret = close.shift(p.mom_skip) / close.shift(p.mom_skip + p.fip_lookback) - 1
+        up = (lr > 0).astype(float).rolling(p.fip_lookback).mean()
+        down = (lr < 0).astype(float).rolling(p.fip_lookback).mean()
+        info_disc = np.sign(pret) * (down - up)
+        s = (-info_disc).where(pret.rank(axis=1, pct=True) >= p.fip_top_pct)
+    else:
+        mom = momentum_12_1(close, p)
+        hi = high_52w(close, p)
+        s = p.w_mom * _zscore_rows(mom) + p.w_high * _zscore_rows(hi)
 
     # éligibilité : historique suffisant et cours du jour disponible
     hist = close.notna().cumsum()

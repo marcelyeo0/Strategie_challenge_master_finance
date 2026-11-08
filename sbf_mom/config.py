@@ -36,5 +36,8 @@ class StratParams:
     regime_exposure: float = 0.5     # exposition max quand l'indice est sous sa moyenne mobile
     min_trade_eur: float = 500.0     # on ignore les ajustements trop petits (frais pour rien)
     top_liquid: int = 0
+    signal: str = "mom"            # "mom" (12-1 + plus haut 52 s) ou "fip" (Frog in the Pan, Da et al. 2014)
+    fip_lookback: int = 126          # FIP : rendement sur 6 mois, en sautant le dernier mois
+    fip_top_pct: float = 0.8         # FIP : on ne garde que les 20 % meilleurs rendements
     use_lowvol: float = 0.0
     tickers_excluded: list = field(default_factory=list)
