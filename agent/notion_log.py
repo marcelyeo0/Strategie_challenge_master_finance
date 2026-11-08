@@ -1,0 +1,1 @@
+def log_run(*a, **k): pass
