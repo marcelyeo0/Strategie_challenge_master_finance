@@ -30,3 +30,5 @@ def log_run(kind: str, regime: str, exposure: float, equity: float, message: str
     r = requests.post("https://api.notion.com/v1/pages", headers=HEADERS(), json=body, timeout=20)
     if r.status_code != 200:
         raise RuntimeError(f"Notion {r.status_code} : {r.text[:300]}")
+
+
